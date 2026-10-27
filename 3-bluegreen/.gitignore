@@ -1,0 +1,5 @@
+.env
+service.env
+deploy.log
+volumes/
+build/*.jar

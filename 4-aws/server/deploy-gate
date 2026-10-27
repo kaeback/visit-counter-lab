@@ -1,0 +1,12 @@
+#!/bin/bash
+# 배포 키로 들어온 접속은 무엇을 요청하든 이 스크립트만 실행된다.
+# 허용하는 것은 "~/deploy.sh <40자 커밋 해시>" 하나뿐이다.
+set -euo pipefail
+cmd="${SSH_ORIGINAL_COMMAND:-}"
+echo "$(date '+%F %T') $cmd" >> "$HOME/deploy-gate.log"
+re='^~/deploy\.sh ([0-9a-f]{40})$'
+if [[ "$cmd" =~ $re ]]; then
+  exec "$HOME/deploy.sh" "${BASH_REMATCH[1]}"
+fi
+echo "허용되지 않은 명령이다: $cmd" >&2
+exit 1

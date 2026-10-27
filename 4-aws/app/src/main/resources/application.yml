@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      # 블루·그린 배포 중에는 컨테이너 두 개가 잠시 동시에 뜬다.
+      # 그만큼 커넥션도 두 배가 되므로 넉넉하게 잡지 않는다.
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: update

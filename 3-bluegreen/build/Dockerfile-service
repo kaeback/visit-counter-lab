@@ -1,0 +1,20 @@
+FROM eclipse-temurin:21-jre
+
+# curl: deploy.sh 가 컨테이너 안에서 헬스체크할 때 쓴다
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# 애플리케이션을 root 가 아닌 전용 계정으로 돌린다
+RUN groupadd --system app && useradd --system --gid app --no-create-home app
+
+WORKDIR /webservice
+
+# 빌드 산출물 — 5절에서 build/ 로 복사해 둔 JAR
+COPY visit-counter-1.0.0.jar app.jar
+
+USER app
+EXPOSE 8080
+
+# exec form — java 가 PID 1 이 되어 docker stop 의 SIGTERM 을 직접 받는다
+ENTRYPOINT ["java", "-jar", "/webservice/app.jar"]

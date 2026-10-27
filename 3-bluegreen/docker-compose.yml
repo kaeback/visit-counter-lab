@@ -1,0 +1,40 @@
+services:
+
+  database:
+    image: 'mysql:8.4'
+    container_name: 'dsa-mysql'
+    # ports 를 열지 않는다. 접근이 필요한 것은 같은 네트워크의 컨테이너뿐이다.
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=visitdb
+      - MYSQL_USER=visituser
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - TZ=Asia/Seoul
+    networks:
+      - dsa_service_network
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
+    healthcheck:
+      # -h 127.0.0.1 로 TCP 를 확인한다.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
+  nginx:
+    image: 'nginx:1.30'
+    container_name: 'dsa-nginx'
+    ports:
+      - '80:80'
+    environment:
+      - TZ=Asia/Seoul
+    networks:
+      - dsa_service_network
+    restart: unless-stopped
+
+networks:
+  dsa_service_network:
+    external: true
+    name: dsa_service_network
