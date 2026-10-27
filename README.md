@@ -23,6 +23,7 @@
 
 | 폴더 | 실습 | 내용 |
 | --- | --- | --- |
+| `python-example/` | Dockerfile 작성 예시 | 강의의 Python(Flask) Dockerfile 예시를 실제로 빌드·실행 |
 | `1-image/` | 1-6 ~ 1-9 | 파일에 숫자를 저장하는 앱, 멀티 스테이지 `Dockerfile`, `.dockerignore` |
 | `2-compose/` | 1-10 ~ 1-12 | MySQL 연동 앱 + Nginx + MySQL `docker-compose.yml` |
 | `3-bluegreen/` | 3-1 ~ 3-3 | 리눅스 서버 한 대에서 Blue/Green 배포 (`/service/docker` 에 복사) |
@@ -32,6 +33,16 @@
 호스트에 JDK·Gradle 을 설치하지 않아도 됩니다. 빌드는 모두 `gradle:8.14-jdk21` 컨테이너가 합니다.
 
 ---
+
+## python-example (Dockerfile 작성 예시)
+
+```powershell
+cd python-example
+docker build -t pyapp:1.0 .
+docker run -d --name pyapp -p 8000:8080 pyapp:1.0
+curl.exe http://localhost:8000      # Hello from Python! host=<컨테이너 ID>
+docker rm -f pyapp
+```
 
 ## 1-image (실습 1-6 ~ 1-9)
 
