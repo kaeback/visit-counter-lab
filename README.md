@@ -7,6 +7,18 @@
 * **ZIP**: 이 페이지의 **Code → Download ZIP** → 압축을 풀어 `C:\lab\visit-counter-lab` 처럼 경로에 한글·공백이 없는 곳에 둡니다.
 * **git**: `git clone https://github.com/kaeback/visit-counter-lab.git`
 
+앱 폴더(`1-image/`, `2-compose/app/`, `4-aws/app/`)는 모두 [start.spring.io](https://start.spring.io)에서 아래 설정으로 생성한 프로젝트에 실습 파일을 더한 것입니다. IntelliJ 에서 **File → Open** 으로 앱 폴더를 바로 열 수 있습니다.
+
+| 항목 | 값 |
+| --- | --- |
+| Project · Language | Gradle - Groovy · Java |
+| Spring Boot | 4.1.2 |
+| Group · Artifact · Package name | `com.example` · `visit-counter` · `com.example` |
+| Packaging · Java | Jar · 21 |
+| Dependencies | Spring Web |
+
+생성 후 더하거나 바꾼 것: `build.gradle` 의 `version = '1.0.0'`(JAR 이름을 고정), `VisitCounterApplication.java`, `Dockerfile`, `.dockerignore`, 그리고 단계별 의존성·설정·엔티티·테스트·워크플로입니다.
+
 비밀번호가 들어가는 파일은 `*.example` 로만 들어 있습니다. 복사해서 비밀번호만 채우면 됩니다. 실제 비밀번호 파일(`.env`, `secrets/*.txt`, `service.env`, `app.env`)은 Git 에 올리지 않습니다.
 
 | 폴더 | 실습 | 내용 |
