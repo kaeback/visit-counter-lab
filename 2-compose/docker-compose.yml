@@ -1,57 +1,57 @@
-services:
-  nginx:
-    image: nginx:1.30
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      app:
-        condition: service_healthy
-    restart: unless-stopped
-  app:
-    build:
-      context: ./app
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
-    secrets:
-      - mysql_user_password
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
-    restart: unless-stopped
-  db:
-    image: mysql:8.4
-    env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
-      MYSQL_PASSWORD_FILE: /run/secrets/mysql_user_password
-    secrets:
-      - mysql_root_password
-      - mysql_user_password
-    volumes:
-      - db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-    restart: unless-stopped
+services:                                  # 함께 띄울 컨테이너(서비스) 목록
+  nginx:                                   # 리버스 프록시 서비스
+    image: nginx:1.30                      # 사용할 nginx 이미지와 버전
+    ports:                                 # 호스트:컨테이너 포트 연결
+      - "80:80"                            # 호스트 80 → 컨테이너 80 (외부에 열리는 유일한 포트)
+    volumes:                               # 호스트 파일/디렉터리 마운트
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro  # 프록시 설정을 읽기 전용(ro)으로 덮어쓴다
+    depends_on:                            # 시작 순서 의존성
+      app:                                 # app 서비스가
+        condition: service_healthy         # 헬스체크를 통과한 뒤에 nginx 를 시작한다
+    restart: unless-stopped                # 직접 멈추지 않는 한 죽으면 다시 띄운다
+  app:                                     # Spring Boot 애플리케이션 서비스
+    build:                                 # 이미지를 받지 않고 직접 빌드한다
+      context: ./app                       # ./app 의 Dockerfile 로 빌드한다
+    environment:                           # 컨테이너에 넣을 환경 변수
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE}  # 서비스 이름 db 로 MySQL 접속. ${} 는 .env 값으로 치환된다
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}                      # DB 사용자명(.env 에서 읽는다)
+    secrets:                               # 이 서비스에 마운트할 시크릿
+      - mysql_user_password                # /run/secrets/mysql_user_password 로 들어간다(entrypoint 가 읽는다)
+    depends_on:                            # 시작 순서 의존성
+      db:                                  # db 서비스가
+        condition: service_healthy         # 헬스체크를 통과한 뒤에 app 을 시작한다
+    healthcheck:                           # 컨테이너 상태 검사
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]  # actuator 가 2xx 를 주면 정상
+      interval: 15s                        # 15초마다 검사한다
+      timeout: 5s                          # 5초 안에 응답이 없으면 실패로 본다
+      retries: 5                           # 연속 5번 실패하면 unhealthy
+      start_period: 40s                    # 기동 직후 40초 동안의 실패는 횟수에 넣지 않는다
+    restart: unless-stopped                # 직접 멈추지 않는 한 죽으면 다시 띄운다
+  db:                                      # MySQL 데이터베이스 서비스
+    image: mysql:8.4                       # 사용할 MySQL 이미지와 버전
+    env_file:                              # 파일에서 환경 변수를 통째로 읽는다
+      - .env                               # MYSQL_DATABASE, MYSQL_USER 등
+    environment:                           # 추가 환경 변수
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password  # root 비밀번호를 값 대신 파일 경로로 넘긴다
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_user_password       # 일반 사용자 비밀번호도 파일로 넘긴다
+    secrets:                               # 이 서비스에 마운트할 시크릿
+      - mysql_root_password                # /run/secrets/mysql_root_password
+      - mysql_user_password                # /run/secrets/mysql_user_password
+    volumes:                               # 데이터 보존용 마운트
+      - db-data:/var/lib/mysql             # 이름 있는 볼륨에 DB 파일을 저장해 컨테이너를 지워도 데이터가 남는다
+    healthcheck:                           # 컨테이너 상태 검사
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]  # TCP 로 접속해 MySQL 이 응답하는지 확인한다
+      interval: 10s                        # 10초마다 검사한다
+      timeout: 5s                          # 5초 안에 응답이 없으면 실패로 본다
+      retries: 10                          # 연속 10번 실패하면 unhealthy
+      start_period: 40s                    # 초기화 시간 40초 동안의 실패는 횟수에 넣지 않는다
+    restart: unless-stopped                # 직접 멈추지 않는 한 죽으면 다시 띄운다
 
-volumes:
-  db-data:
+volumes:                                   # 이름 있는 볼륨 정의
+  db-data:                                 # 위 db 서비스가 쓰는 볼륨(Docker 가 관리)
 
-secrets:
-  mysql_root_password:
-    file: ./secrets/mysql_root_password.txt
-  mysql_user_password:
-    file: ./secrets/mysql_user_password.txt
+secrets:                                   # 시크릿 정의
+  mysql_root_password:                     # root 비밀번호 시크릿
+    file: ./secrets/mysql_root_password.txt  # 내용을 읽어 올 호스트 파일
+  mysql_user_password:                     # 앱 사용자 비밀번호 시크릿
+    file: ./secrets/mysql_user_password.txt  # 내용을 읽어 올 호스트 파일

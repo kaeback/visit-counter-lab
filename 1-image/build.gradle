@@ -1,28 +1,28 @@
-plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.2'
-	id 'io.spring.dependency-management' version '1.1.7'
+plugins {                                                                       // 빌드에 쓸 Gradle 플러그인
+	id 'java'                                                                   // 자바 컴파일·테스트·JAR 작업을 추가한다
+	id 'org.springframework.boot' version '4.1.2'                               // bootJar(실행 가능한 JAR) 작업과 Boot 설정을 추가한다
+	id 'io.spring.dependency-management' version '1.1.7'                        // Boot 버전에 맞는 라이브러리 버전을 고른다(아래 의존성에 버전이 없는 이유)
 }
 
-group = 'com.example'
-version = '1.0.0'
+group = 'com.example'                                                           // 프로젝트 그룹(패키지 이름과 맞춘다)
+version = '1.0.0'                                                               // 버전. JAR 이름 visit-counter-1.0.0.jar 의 뒷부분이 된다
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+java {                                                                          // 자바 빌드 설정
+	toolchain {                                                                 // 어떤 JDK 로 빌드할지 지정한다
+		languageVersion = JavaLanguageVersion.of(21)                            // Java 21 로 컴파일한다(Dockerfile 의 JDK/JRE 21 과 맞춘다)
 	}
 }
 
-repositories {
-	mavenCentral()
+repositories {                                                                  // 의존성을 내려받을 저장소
+	mavenCentral()                                                              // Maven Central 에서 내려받는다
 }
 
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+dependencies {                                                                  // 사용할 라이브러리
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'        // 웹 MVC + 내장 Tomcat(HTTP 서버)
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test' // 웹 MVC 테스트 도구(테스트에서만 쓴다)
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                // Gradle 이 JUnit 테스트를 실행할 때 필요한 런처
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
+tasks.named('test') {                                                           // test 작업 설정
+	useJUnitPlatform()                                                          // JUnit 5 플랫폼으로 테스트를 실행한다
 }

@@ -1,19 +1,26 @@
+# JAR 는 이미 밖에서 빌드해 두었으므로 JRE 21 이미지 하나로 시작한다
 FROM eclipse-temurin:21-jre
 
 # curl: deploy.sh 가 컨테이너 안에서 헬스체크할 때 쓴다
+# 패키지 목록 갱신 → 권장 패키지 없이 curl 만 설치 → 패키지 목록 캐시 삭제(이미지 크기 절약)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
 # 애플리케이션을 root 가 아닌 전용 계정으로 돌린다
+# 시스템 그룹 app 과, 홈 디렉터리 없는 시스템 계정 app 을 만든다
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 
+# 이후 명령의 작업 디렉터리를 /webservice 로 정한다(없으면 만든다)
 WORKDIR /webservice
 
 # 빌드 산출물 — 5절에서 build/ 로 복사해 둔 JAR
+# 빌드 컨텍스트(build/)의 JAR 를 app.jar 라는 이름으로 복사한다
 COPY visit-counter-1.0.0.jar app.jar
 
+# 이후 명령과 컨테이너 프로세스를 app 계정으로 실행한다
 USER app
+# 컨테이너가 8080 포트를 쓴다고 문서화한다
 EXPOSE 8080
 
 # exec form — java 가 PID 1 이 되어 docker stop 의 SIGTERM 을 직접 받는다

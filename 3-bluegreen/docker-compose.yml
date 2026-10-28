@@ -1,40 +1,40 @@
-services:
-
-  database:
-    image: 'mysql:8.4'
-    container_name: 'dsa-mysql'
+services:                                  # 함께 띄울 컨테이너(서비스) 목록
+                                           # (blue/green 앱 컨테이너는 deploy.sh 가 따로 띄운다)
+  database:                                # MySQL 데이터베이스 서비스
+    image: 'mysql:8.4'                     # 사용할 MySQL 이미지와 버전
+    container_name: 'dsa-mysql'            # 컨테이너 이름을 고정한다(같은 네트워크에서 이 이름으로 접속)
     # ports 를 열지 않는다. 접근이 필요한 것은 같은 네트워크의 컨테이너뿐이다.
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=visitdb
-      - MYSQL_USER=visituser
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - TZ=Asia/Seoul
-    networks:
-      - dsa_service_network
-    volumes:
-      - ./volumes/mysql:/var/lib/mysql
-    healthcheck:
+    environment:                           # 컨테이너에 넣을 환경 변수
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}  # root 비밀번호(.env 또는 셸 환경 변수에서 치환)
+      - MYSQL_DATABASE=visitdb             # 처음 기동할 때 만들 데이터베이스
+      - MYSQL_USER=visituser               # 처음 기동할 때 만들 일반 사용자
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}   # 일반 사용자 비밀번호(치환)
+      - TZ=Asia/Seoul                      # 컨테이너 시간대를 한국 시간으로
+    networks:                              # 연결할 네트워크
+      - dsa_service_network                # 앱·nginx 와 같은 네트워크
+    volumes:                               # 데이터 보존용 마운트
+      - ./volumes/mysql:/var/lib/mysql     # 호스트 디렉터리에 DB 파일을 저장한다(바인드 마운트)
+    healthcheck:                           # 컨테이너 상태 검사
       # -h 127.0.0.1 로 TCP 를 확인한다.
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-    restart: unless-stopped
+      interval: 10s                        # 10초마다 검사한다
+      timeout: 5s                          # 5초 안에 응답이 없으면 실패로 본다
+      retries: 10                          # 연속 10번 실패하면 unhealthy
+      start_period: 40s                    # 초기화 시간 40초 동안의 실패는 횟수에 넣지 않는다
+    restart: unless-stopped                # 직접 멈추지 않는 한 죽으면 다시 띄운다
 
-  nginx:
-    image: 'nginx:1.30'
-    container_name: 'dsa-nginx'
-    ports:
-      - '80:80'
-    environment:
-      - TZ=Asia/Seoul
-    networks:
-      - dsa_service_network
-    restart: unless-stopped
+  nginx:                                   # 리버스 프록시 서비스(blue/green 전환 지점)
+    image: 'nginx:1.30'                    # 사용할 nginx 이미지와 버전
+    container_name: 'dsa-nginx'            # deploy.sh 가 docker exec 로 찾는 이름
+    ports:                                 # 호스트:컨테이너 포트 연결
+      - '80:80'                            # 호스트 80 → 컨테이너 80
+    environment:                           # 컨테이너에 넣을 환경 변수
+      - TZ=Asia/Seoul                      # 로그 시각을 한국 시간으로
+    networks:                              # 연결할 네트워크
+      - dsa_service_network                # blue/green 컨테이너 이름으로 프록시할 수 있게 같은 네트워크
+    restart: unless-stopped                # 직접 멈추지 않는 한 죽으면 다시 띄운다
 
-networks:
-  dsa_service_network:
-    external: true
-    name: dsa_service_network
+networks:                                  # 네트워크 정의
+  dsa_service_network:                     # 위 서비스들이 쓰는 네트워크
+    external: true                         # compose 가 만들지 않는다. 미리 docker network create 로 만들어 둔다
+    name: dsa_service_network              # 실제 Docker 네트워크 이름

@@ -1,1 +1,2 @@
+// 프로젝트 이름. version 과 합쳐 JAR 이름(visit-counter-1.0.0.jar)이 되고, Dockerfile 이 이 이름으로 JAR 를 찾는다
 rootProject.name = 'visit-counter'
