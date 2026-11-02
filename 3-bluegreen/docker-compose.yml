@@ -34,6 +34,18 @@ services:                                  # 함께 띄울 컨테이너(서비�
       - dsa_service_network                # blue/green 컨테이너 이름으로 프록시할 수 있게 같은 네트워크
     restart: unless-stopped                # 직접 멈추지 않는 한 죽으면 다시 띄운다
 
+  deployer:                                # deploy.sh 를 실행하는 도구 컨테이너 (docker compose run --rm deployer)
+    build: ./deployer                      # docker CLI + bash 이미지 (deployer/Dockerfile)
+    image: 'deployer'                      # 만든 이미지 이름
+    profiles: ['tools']                    # docker compose up 으로는 뜨지 않는다. run 으로만 실행
+    networks:                              # docker build 가 이미지 레지스트리에 접속하려면 네트워크가 필요하다
+      - dsa_service_network                # 새 네트워크를 만들지 않고 기존 것을 쓴다
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # 호스트 Docker 엔진 소켓
+      - .:/service/docker                  # 이 폴더를 deploy.sh 의 BASE 경로로 보이게 한다
+    working_dir: /service/docker           # 작업 폴더
+    command: ['bash', './deploy.sh']       # 실행 권한이 없어도(ZIP·Windows) bash 로 실행
+
 networks:                                  # 네트워크 정의
   dsa_service_network:                     # 위 서비스들이 쓰는 네트워크
     external: true                         # compose 가 만들지 않는다. 미리 docker network create 로 만들어 둔다

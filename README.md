@@ -26,7 +26,7 @@
 | `python-example/` | Dockerfile 작성 예시 | 강의의 Python(Flask) Dockerfile 예시를 실제로 빌드·실행 |
 | `1-image/` | 1-6 ~ 1-9 | 파일에 숫자를 저장하는 앱, 멀티 스테이지 `Dockerfile`, `.dockerignore` |
 | `2-compose/` | 1-10 ~ 1-12 | MySQL 연동 앱 + Nginx + MySQL `docker-compose.yml` |
-| `3-bluegreen/` | 3-1 ~ 3-3 | 리눅스 서버 한 대에서 Blue/Green 배포 (`/service/docker` 에 복사) |
+| `3-bluegreen/` | 3-1 ~ 3-3 | 내 PC(Docker Desktop)에서 Blue/Green 무중단 배포. `deploy.sh` 는 deployer 컨테이너가 실행 |
 | `4-aws/app/` | 4-4 ~ 4-12 | PostgreSQL(Supabase) 판 앱 + 테스트 + GitHub Actions 워크플로 — **내 저장소 루트로 복사** |
 | `4-aws/server/` | 4-6 ~ 4-11 | EC2 에 둘 파일: `app.env`, `deploy.sh`, `deploy-bluegreen.sh`, `deploy-gate`, Nginx 설정 |
 
@@ -69,37 +69,51 @@ docker compose down                 # down -v 는 DB 데이터까지 지운다
 
 macOS 는 `cp .env.example .env`, 비밀번호는 `echo 'RootPassword!123' > secrets/mysql_root_password.txt` 로 만듭니다.
 
-## 3-bluegreen (실습 3-1 ~ 3-3, 리눅스 서버)
+## 3-bluegreen (실습 3-1 ~ 3-3)
 
-메모리 2 GiB 이상(EC2 `t3.small` 등), Docker Engine 과 Compose 플러그인이 있는 서버에서 합니다.
+Docker Desktop 만 있으면 내 PC 에서 합니다(Ubuntu·WSL 배포판 설치 불필요). 명령은 PowerShell 기준입니다.
+`deploy.sh` 는 bash 스크립트라서 **deployer 컨테이너**(docker CLI + bash, `deployer/Dockerfile`) 안에서 실행합니다. 이 컨테이너가 Docker 소켓으로 내 PC 의 Docker 를 조작합니다.
 
-```bash
-sudo dnf install -y git            # Ubuntu 는 sudo apt-get install -y git
-git clone https://github.com/kaeback/visit-counter-lab.git ~/visit-counter-lab
+```powershell
+# 3-1. 준비 — JAR 빌드 (2-compose 의 앱을 쓴다)
+cd C:\lab\visit-counter-lab\2-compose\app
+docker run --rm -v "${PWD}:/build" -w /build gradle:8.14-jdk21 gradle bootJar --no-daemon
+Copy-Item build\libs\visit-counter-1.0.0.jar ..\..\3-bluegreen\build\
 
+# 비밀번호 파일과 DB 폴더, 네트워크
+cd ..\..\3-bluegreen
+Copy-Item .env.example .env
+Copy-Item service.env.example service.env      # 비밀번호는 .env 의 MYSQL_PASSWORD 와 같게
+New-Item -ItemType Directory -Force volumes\mysql | Out-Null
 docker network create dsa_service_network
-sudo mkdir -p /service/docker
-sudo chown -R "$USER":"$USER" /service
-cp -r ~/visit-counter-lab/3-bluegreen/. /service/docker/
-mkdir -p /service/docker/volumes/mysql
 
-# 비밀번호만 바꾼다. service.env 의 비밀번호는 .env 의 MYSQL_PASSWORD 와 같아야 한다.
-cd /service/docker
-cp .env.example .env && cp service.env.example service.env
-vi .env service.env
-chmod 600 .env service.env
-chmod +x deploy.sh
+# DB·Nginx 기동
+docker compose up -d
+docker compose ps                               # dsa-mysql (healthy) 확인
 
-# JAR 빌드 (2-compose 의 앱을 쓴다)
-cd ~/visit-counter-lab/2-compose/app
-docker run --rm -v "$PWD":/build -w /build gradle:8.14-jdk21 gradle bootJar --no-daemon
-cp build/libs/visit-counter-1.0.0.jar /service/docker/build/
-
-cd /service/docker
-docker compose up -d                # dsa-mysql (healthy) 확인
-./deploy.sh                         # 배포 완료: blue-service
-curl http://localhost/              # 방문 횟수: 1
+# 3-3. 배포 — deploy.sh 를 deployer 컨테이너에서 실행 (첫 실행 때 deployer 이미지를 빌드한다)
+docker compose run --rm deployer                # 배포 완료: blue-service
+curl.exe http://localhost/                      # 방문 횟수: 1
 ```
+
+v2 배포: `VisitCounterApplication.java` 의 응답 문구를 바꾸고 → JAR 을 다시 빌드해 `build\` 에 복사 → `docker compose run --rm deployer`. 다른 터미널에서 요청을 반복해 두면 응답이 끊기지 않고 v2 로 바뀌는 것을 볼 수 있습니다.
+
+```powershell
+[Console]::OutputEncoding = [Text.Encoding]::UTF8   # 한글 응답이 깨지지 않게
+while ($true) { (curl.exe -s -w "%{http_code}" http://localhost/) -join "  "; Start-Sleep -Milliseconds 300 }
+```
+
+정리:
+
+```powershell
+docker rm -f blue-service green-service
+docker compose down
+docker network rm dsa_service_network
+Remove-Item -Recurse -Force volumes
+```
+
+macOS 는 같은 흐름을 터미널에서 실행합니다(`Copy-Item` → `cp`, `New-Item …` → `mkdir -p volumes/mysql`, `curl.exe` → `curl`).
+리눅스 서버(메모리 2 GiB 이상)라면 deployer 없이 `./deploy.sh` 를 바로 실행해도 됩니다. 이때 폴더는 `/service/docker` 로 복사합니다(`deploy.sh` 의 `BASE`).
 
 ## 4-aws (실습 4-4 ~ 4-12)
 

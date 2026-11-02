@@ -7,7 +7,7 @@ APP="visit-counter"                  # 이미지 이름
 NETWORK="dsa_service_network"        # 컨테이너들이 함께 쓰는 Docker 네트워크
 NGINX="dsa-nginx"                    # 트래픽을 전환할 nginx 컨테이너 이름
 
-BASE="/service/docker"               # 서버의 배포 기준 디렉터리
+BASE="/service/docker"               # 배포 기준 디렉터리 (로컬은 deployer 컨테이너가 이 경로로 마운트)
 BUILD_DIR="$BASE/build"              # Dockerfile-service 와 JAR 가 있는 빌드 컨텍스트
 NGINX_CONF_DIR="$BASE/config/nginx"  # blue/green 용 nginx 설정 파일 위치
 ENV_FILE="$BASE/service.env"         # 앱 컨테이너에 넘길 환경 변수 파일
