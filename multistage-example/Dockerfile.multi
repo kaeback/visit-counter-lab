@@ -1,0 +1,11 @@
+# 1단계: 빌드 환경 (JDK로 컴파일)
+FROM gradle:8.14-jdk21 AS builder
+WORKDIR /build
+COPY Hello.java .
+RUN javac Hello.java
+
+# 2단계: 실행 환경 (JRE만, 컴파일 결과만 복사)
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=builder /build/Hello.class .
+CMD ["java", "Hello"]

@@ -24,6 +24,8 @@
 | 폴더 | 실습 | 내용 |
 | --- | --- | --- |
 | `python-example/` | Dockerfile 작성 예시 | 강의의 Python(Flask) Dockerfile 예시를 실제로 빌드·실행 |
+| `multistage-example/` | 멀티 스테이지 직접 해 보기 | 같은 Java 프로그램을 일반 빌드·멀티 스테이지로 빌드해 크기 비교 |
+| `node-example/` | Node.js 멀티 스테이지 직접 해 보기 | Node로 빌드한 HTML을 Nginx로 서빙, 레이어 캐시 확인 |
 | `1-image/` | 1-6 ~ 1-9 | 파일에 숫자를 저장하는 앱, 멀티 스테이지 `Dockerfile`, `.dockerignore` |
 | `2-compose/` | 1-10 ~ 1-12 | MySQL 연동 앱 + Nginx + MySQL `docker-compose.yml` |
 | `3-bluegreen/` | 3-1 ~ 3-3 | 내 PC(Docker Desktop)에서 Blue/Green 무중단 배포. `deploy.sh` 는 deployer 컨테이너가 실행 |
@@ -42,6 +44,30 @@ docker build -t pyapp:1.0 .
 docker run -d --name pyapp -p 8000:8080 pyapp:1.0
 curl.exe http://localhost:8000      # Hello from Python! host=<컨테이너 ID>
 docker rm -f pyapp
+```
+
+## multistage-example (일반 빌드 vs 멀티 스테이지)
+
+```powershell
+cd multistage-example
+docker build -f Dockerfile.single -t hello:single .
+docker build -f Dockerfile.multi -t hello:multi .
+docker image ls hello                     # single 1.25GB · multi 457MB
+docker run --rm hello:multi               # Hello from Java 21.x
+docker run --rm hello:multi javac -version   # javac: not found (실행 이미지엔 컴파일러가 없다)
+docker rmi hello:single hello:multi
+```
+
+## node-example (Node.js 빌드 → Nginx 서빙)
+
+```powershell
+cd node-example
+docker build -t node-web:1.0 .
+docker run -d --name node-web -p 8082:80 node-web:1.0
+curl.exe http://localhost:8082      # <h1>Hello from Node build!</h1>
+# src\index.md 를 고치고 다시 빌드하면 npm ci 까지 CACHED
+docker build -t node-web:1.1 .
+docker rm -f node-web; docker rmi node-web:1.0 node-web:1.1
 ```
 
 ## 1-image (실습 1-6 ~ 1-9)
