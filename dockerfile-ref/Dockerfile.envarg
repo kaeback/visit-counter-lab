@@ -1,0 +1,11 @@
+# FROM 앞의 ARG: FROM 줄에서만 쓸 수 있다
+ARG ALPINE_VERSION=3.20
+FROM alpine:${ALPINE_VERSION}
+# 스테이지 안에서 쓰려면 다시 선언 (값은 이어받는다)
+ARG ALPINE_VERSION
+# ARG: 빌드할 때만 존재. --build-arg 로 바꿀 수 있다
+ARG APP_VERSION=1.0
+# ENV: 빌드·실행 모두 존재
+ENV APP_ENV=dev
+RUN echo "build: alpine=${ALPINE_VERSION} version=${APP_VERSION} env=${APP_ENV}" > /build-info.txt
+CMD ["sh", "-c", "cat /build-info.txt; echo \"run: APP_VERSION=${APP_VERSION:-(없음)} APP_ENV=${APP_ENV}\""]

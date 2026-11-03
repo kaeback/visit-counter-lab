@@ -1,0 +1,12 @@
+FROM alpine:3.20
+WORKDIR /app
+# 상대 경로 → /app/build
+WORKDIR build
+RUN pwd > /where-workdir.txt
+# RUN cd 는 그 RUN 안에서만 유효
+RUN cd /tmp && pwd > /where-cd.txt
+RUN pwd > /where-next.txt
+# COPY: tar 를 그대로 복사 / ADD: 로컬 tar 는 풀어서 넣는다
+COPY files/site.tar.gz /copy/
+ADD  files/site.tar.gz /add/
+CMD ["sh", "-c", "echo workdir=$(cat /where-workdir.txt) cd=$(cat /where-cd.txt) next=$(cat /where-next.txt); echo COPY:; ls /copy; echo ADD:; ls /add"]

@@ -26,6 +26,8 @@
 | `python-example/` | Dockerfile 작성 예시 | 강의의 Python(Flask) Dockerfile 예시를 실제로 빌드·실행 |
 | `multistage-example/` | 멀티 스테이지 직접 해 보기 | 같은 Java 프로그램을 일반 빌드·멀티 스테이지로 빌드해 크기 비교 |
 | `node-example/` | Node.js 멀티 스테이지 직접 해 보기 | Node로 빌드한 HTML을 Nginx로 서빙, 레이어 캐시 확인 |
+| `compose-example/` | Compose 문법 직접 해 보기 | nginx + Flask 두 서비스로 ports·.env·secrets·volumes·healthcheck·restart와 compose 명령 확인 |
+| `dockerfile-ref/` | Part 2 Dockerfile 레퍼런스 직접 해 보기 | shell/exec form, ENV·ARG, WORKDIR·COPY·ADD, USER·LABEL·HEALTHCHECK |
 | `1-image/` | 1-6 ~ 1-9 | 파일에 숫자를 저장하는 앱, 멀티 스테이지 `Dockerfile`, `.dockerignore` |
 | `2-compose/` | 1-10 ~ 1-12 | MySQL 연동 앱 + Nginx + MySQL `docker-compose.yml` |
 | `3-bluegreen/` | 3-1 ~ 3-3 | 내 PC(Docker Desktop)에서 Blue/Green 무중단 배포. `deploy.sh` 는 deployer 컨테이너가 실행 |
@@ -68,6 +70,36 @@ curl.exe http://localhost:8082      # <h1>Hello from Node build!</h1>
 # src\index.md 를 고치고 다시 빌드하면 npm ci 까지 CACHED
 docker build -t node-web:1.1 .
 docker rm -f node-web; docker rmi node-web:1.0 node-web:1.1
+```
+
+## compose-example (Compose 문법 직접 해 보기)
+
+```powershell
+cd compose-example
+Copy-Item .env.example .env                              # macOS: cp
+Copy-Item secrets\api_key.txt.example secrets\api_key.txt
+docker compose up -d --build
+curl.exe http://localhost:8083/api/       # Hello Compose! count=1 secret=yes
+curl.exe http://localhost:8080/           # 실패: api 는 ports 가 없다
+docker compose config                     # .env 치환 결과
+docker compose exec api cat /run/secrets/api_key
+curl.exe http://localhost:8083/api/crash  # restart: unless-stopped 로 다시 뜬다
+docker compose down -v --rmi local
+```
+
+## dockerfile-ref (Part 2 레퍼런스 직접 해 보기)
+
+```powershell
+cd dockerfile-ref
+# shell form vs exec form: docker top 의 PID 1, docker stop 후 Exited (137) vs (0)
+docker build -f Dockerfile.shell -t sig:shell .; docker build -f Dockerfile.exec -t sig:exec .
+# ENV·ARG
+docker build -f Dockerfile.envarg --build-arg APP_VERSION=2.0 -t envarg:2.0 .; docker run --rm envarg:2.0
+# WORKDIR·RUN cd·COPY·ADD
+docker build -f Dockerfile.workdir -t workdir:1.0 .; docker run --rm workdir:1.0
+# USER·LABEL / HEALTHCHECK
+docker build -f Dockerfile.user -t user:1.0 .; docker run --rm user:1.0
+docker build -f Dockerfile.health -t health:1.0 .; docker run -d --name web-health -p 8084:80 health:1.0
 ```
 
 ## 1-image (실습 1-6 ~ 1-9)

@@ -1,0 +1,3 @@
+# shell form: /bin/sh -c 가 PID 1, nginx 는 그 자식 → docker stop 의 SIGTERM 이 nginx 에 안 간다
+FROM nginx:1.30
+CMD echo "starting nginx" && nginx -g "daemon off;"

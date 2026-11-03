@@ -1,0 +1,6 @@
+FROM alpine:3.20
+# 일반 사용자 만들기 (-D: 암호 없이)
+RUN adduser -D appuser
+LABEL org.opencontainers.image.description="USER 실습"
+USER appuser
+CMD ["sh", "-c", "echo user=$(whoami) uid=$(id -u); touch /etc/test 2>&1 || true"]

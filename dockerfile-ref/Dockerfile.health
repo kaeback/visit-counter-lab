@@ -1,0 +1,4 @@
+FROM nginx:1.30
+# 5초마다 첫 페이지를 받아 본다. 3번 연속 실패하면 unhealthy
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -fsS http://localhost/ > /dev/null || exit 1

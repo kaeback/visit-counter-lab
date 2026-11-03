@@ -1,0 +1,3 @@
+# exec form: nginx 가 PID 1 → SIGTERM 을 바로 받는다
+FROM nginx:1.30
+CMD ["nginx", "-g", "daemon off;"]
