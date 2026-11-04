@@ -1,5 +1,5 @@
-# 일반 빌드: 빌드에 쓴 JDK·Gradle 이미지가 그대로 실행 이미지가 된다
-FROM gradle:8.14-jdk21
+# 일반 빌드: 빌드에 쓴 JDK 이미지가 그대로 실행 이미지가 된다
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
 COPY Hello.java .
 # 컴파일 → Hello.class

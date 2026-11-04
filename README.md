@@ -54,7 +54,7 @@ docker rm -f pyapp
 cd multistage-example
 docker build -f Dockerfile.single -t hello:single .
 docker build -f Dockerfile.multi -t hello:multi .
-docker image ls hello                     # single 1.25GB · multi 457MB
+docker image ls hello                     # single 724MB · multi 457MB
 docker run --rm hello:multi               # Hello from Java 21.x
 docker run --rm hello:multi javac -version   # javac: not found (실행 이미지엔 컴파일러가 없다)
 docker rmi hello:single hello:multi

@@ -1,5 +1,5 @@
 # 1단계: 빌드 환경 (JDK로 컴파일)
-FROM gradle:8.14-jdk21 AS builder
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /build
 COPY Hello.java .
 RUN javac Hello.java
