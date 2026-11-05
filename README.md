@@ -31,8 +31,9 @@
 | `1-image/` | 1-6 ~ 1-9 | 파일에 숫자를 저장하는 앱, 멀티 스테이지 `Dockerfile`, `.dockerignore` |
 | `2-compose/` | 1-10 ~ 1-12 | MySQL 연동 앱 + Nginx + MySQL `docker-compose.yml` |
 | `3-bluegreen/` | 3-1 ~ 3-3 | 내 PC(Docker Desktop)에서 Blue/Green 무중단 배포. `deploy.sh` 는 deployer 컨테이너가 실행 |
-| `4-aws/app/` | 4-4 ~ 4-12 | PostgreSQL(Supabase) 판 앱 + 테스트 + GitHub Actions 워크플로 — **내 저장소 루트로 복사** |
-| `4-aws/server/` | 4-6 ~ 4-11 | EC2 에 둘 파일: `app.env`, `deploy.sh`, `deploy-bluegreen.sh`, `deploy-gate`, Nginx 설정 |
+| `4-aws/app/` | 4-4 ~ 4-13 | PostgreSQL(Supabase) 판 앱 + 테스트 — **내 저장소 루트로 복사** |
+| `4-aws/workflows/` | 4-7 · 4-8 · 4-10 | GitHub Actions 워크플로를 단계별로: `1-test.yml` → `2-build-push.yml` → `3-deploy.yml` |
+| `4-aws/server/` | 4-6 ~ 4-12 | EC2 에 둘 파일: `app.env`, `deploy.sh`, `deploy-bluegreen.sh`, `deploy-gate`, Nginx 설정 |
 
 호스트에 JDK·Gradle 을 설치하지 않아도 됩니다. 빌드는 모두 `gradle:8.14-jdk21` 컨테이너가 합니다.
 
@@ -173,11 +174,11 @@ Remove-Item -Recurse -Force volumes
 macOS 는 같은 흐름을 터미널에서 실행합니다(`Copy-Item` → `cp`, `New-Item …` → `mkdir -p volumes/mysql`, `curl.exe` → `curl`).
 리눅스 서버(메모리 2 GiB 이상)라면 deployer 없이 `./deploy.sh` 를 바로 실행해도 됩니다. 이때 폴더는 `/service/docker` 로 복사합니다(`deploy.sh` 의 `BASE`).
 
-## 4-aws (실습 4-4 ~ 4-12)
+## 4-aws (실습 4-4 ~ 4-13)
 
 ### 내 저장소 만들기 (실습 4-6)
 
-GitHub 에 `visit-counter` 저장소를 새로 만들고, **`4-aws/app/` 안의 파일이 저장소 루트에 오도록** 올립니다. 숨김 폴더 `.github` 까지 복사됩니다.
+GitHub 에 `visit-counter` 저장소를 새로 만들고, **`4-aws/app/` 안의 파일이 저장소 루트에 오도록** 올립니다.
 
 ```powershell
 Copy-Item -Recurse visit-counter-lab\4-aws\app visit-counter
@@ -188,7 +189,24 @@ git remote add origin https://github.com/<GitHub사용자명>/visit-counter.git
 git push -u origin main
 ```
 
-`.github/workflows/deploy.yml` 이 들어 있어 push 하면 워크플로가 돕니다. 4-7 의 Secrets 를 등록하기 전에는 배포 단계에서 실패하는 것이 정상입니다.
+처음 올릴 때는 워크플로가 없습니다. 아래 순서로 한 단계씩 넣습니다.
+
+### GitHub Actions 단계별로 붙이기 (실습 4-7 · 4-8 · 4-10)
+
+워크플로 파일은 내 저장소의 `.github/workflows/deploy.yml` 하나이고, 단계마다 `4-aws/workflows/` 의 파일로 덮어씁니다.
+
+| 실습 | 복사할 파일 | push 하면 |
+|---|---|---|
+| 4-7 테스트 자동화 (예제 1) | `1-test.yml` | `test` job 만 돈다 |
+| 4-8 빌드·push 자동화 | `2-build-push.yml` | `test` → `build-and-push`, GHCR 에 커밋 해시 태그 |
+| 4-10 자동 배포 (예제 2) | `3-deploy.yml` | `test` → `build-and-deploy`, EC2 의 `~/deploy.sh` 실행 (4-9 의 Secrets 3개 필요) |
+
+```powershell
+# C:\lab\visit-counter 에서 (4-7 처음 한 번만 폴더 생성)
+New-Item -ItemType Directory -Force .github\workflows
+Copy-Item ..\visit-counter-lab\4-aws\workflows\1-test.yml .github\workflows\deploy.yml
+git add .; git commit -m "ci: push하면 테스트 자동 실행"; git push
+```
 
 ### EC2 에 둘 파일
 
@@ -198,16 +216,16 @@ cp ~/visit-counter-lab/4-aws/server/app.env.example ~/app.env
 vi ~/app.env                        # Supabase Connect 화면의 값 3개, 따옴표 없이
 chmod 600 ~/app.env
 
-# 4-7: 단순 배포 스크립트 — GH_USER 한 줄만 내 GitHub 사용자명(소문자)으로 바꾼다
+# 4-9: 단순 배포 스크립트 — GH_USER 한 줄만 내 GitHub 사용자명(소문자)으로 바꾼다
 cp ~/visit-counter-lab/4-aws/server/deploy.sh ~/deploy.sh
 vi ~/deploy.sh
 chmod +x ~/deploy.sh
 
-# 4-10: Nginx
+# 4-11: Nginx
 sudo cp ~/visit-counter-lab/4-aws/server/nginx/service-url.inc /etc/nginx/conf.d/
 sudo cp ~/visit-counter-lab/4-aws/server/nginx/app.conf /etc/nginx/default.d/
 
-# 4-11: 무중단 배포 스크립트와 배포 키 관문
+# 4-12: 무중단 배포 스크립트와 배포 키 관문
 cp ~/visit-counter-lab/4-aws/server/deploy-bluegreen.sh ~/deploy.sh
 vi ~/deploy.sh                      # GH_USER 다시 지정
 chmod +x ~/deploy.sh

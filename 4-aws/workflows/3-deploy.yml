@@ -1,3 +1,5 @@
+# 실습 4-10 (예제 2): 빌드 · push 다음에 EC2 배포까지 자동으로 한다
+# 내 저장소의 .github/workflows/deploy.yml 을 이 파일로 덮어쓴다 (4-9 의 Secrets 3개가 먼저 있어야 한다).
 name: deploy                     # Actions 탭에 보이는 워크플로 이름
 
 on:                              # 워크플로를 실행할 이벤트
@@ -8,7 +10,7 @@ permissions:                     # 이 워크플로의 GITHUB_TOKEN 이 가질 �
   contents: read                 # 저장소 코드 읽기(checkout 에 필요)
   packages: write        # GHCR 에 올리려면 필요하다
 
-# 배포는 한 번에 하나만 돈다. 앞 배포가 끝날 때까지 다음 실행은 기다린다.
+# 4-10 에서 추가: 배포는 한 번에 하나만 돈다. 앞 배포가 끝날 때까지 다음 실행은 기다린다.
 concurrency:
   group: deploy                  # 같은 그룹 이름을 가진 실행끼리 겹치지 않는다
   cancel-in-progress: false      # 진행 중인 배포를 취소하지 않고 끝날 때까지 기다린다
@@ -66,6 +68,7 @@ jobs:                            # 실행할 job 목록
           cache-from: type=gha   # GitHub Actions 캐시에서 이전 빌드 레이어를 가져온다
           cache-to: type=gha,mode=max  # 모든 단계(빌드 단계 포함)의 레이어를 캐시에 저장한다
 
+      # 4-10 에서 추가: 서버에 접속해 배포 스크립트를 실행한다
       - name: EC2 에 배포
         uses: appleboy/ssh-action@v1  # SSH 로 서버에 접속해 명령을 실행하는 액션
         with:
